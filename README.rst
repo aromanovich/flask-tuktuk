@@ -1,5 +1,5 @@
-JSL
-===
+Flask-TukTuk
+============
 
 .. image:: https://travis-ci.org/aromanovich/flask-tuktuk.svg?branch=master
     :target: https://travis-ci.org/aromanovich/flask-tuktuk
