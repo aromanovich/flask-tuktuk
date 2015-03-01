@@ -37,7 +37,9 @@ setup(
     url='https://flask-tuktuk.readthedocs.org',
     packages=find_packages(exclude=['tests']),
     install_requires=[
-        'jsl==0.0.4',
+        'flask',
+        'flask-script==2.0.5',
+        'jsl==0.0.6',
         'jsonschema>=2.4.0',
         'rfc3987',
         'strict-rfc3339',
