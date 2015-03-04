@@ -149,19 +149,19 @@ class APIManager(object):
             warn('TUKTUK_RAISE_ON_INVALID_RESPONSE is set, but the application will '
                  'not propagate exceptions raised by invalid responses. Consider '
                  'setting TESTING, DEBUG or PROPAGATE_EXCEPTIONS.')
-        app.before_request(preprocess_request)
-        app.after_request(postprocess_http_exception)
-        register_error_handlers(app)
         if not hasattr(app, 'extensions'):
             app.extensions = {}
         app.extensions['tuktuk'] = _APIManagerState(self, app)
 
-        # TODO
-        # self.register_error_resource_cls(Error)
-        get_state(app).error_resource_cls = Error
+        app.before_request(preprocess_request)
+        app.after_request(postprocess_http_exception)
+        register_error_handlers(app)
+        self.register_error_resource_cls(Error, app=app)
 
-    def get_app(self):
+    def get_app(self, reference_app=None):
         """Helper method that implements the logic to look up an application."""
+        if reference_app is not None:
+            return reference_app
         if self.app is not None:
             return self.app
         ctx = ctx_stack.top
@@ -171,5 +171,5 @@ class APIManager(object):
                            'instance and no application bound '
                            'to current context')
 
-    # def register_error_resource_cls(self, resource_cls):
-    #     get_state(self.get_app()).error_resource_cls = resource_cls
+    def register_error_resource_cls(self, resource_cls, app=None):
+         get_state(self.get_app(app)).error_resource_cls = resource_cls
