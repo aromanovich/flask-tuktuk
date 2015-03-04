@@ -23,10 +23,10 @@ def _get_type_hint(name, field):
         hint = 'bool'
     elif isinstance(field, jsl.StringField):
         hint = 'str'
-    elif isinstance(field, jsl.NumberField):
-        hint = 'numbers.Number'
     elif isinstance(field, jsl.IntField):
         hint = 'int'
+    elif isinstance(field, jsl.NumberField):
+        hint = 'numbers.Number'
     elif isinstance(field, jsl.ArrayField):
         nested_field_hint = _get_type_hint(field.items)
         hint = 'list[{}]'.format(nested_field_hint)

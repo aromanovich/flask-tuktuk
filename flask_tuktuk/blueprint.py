@@ -9,6 +9,7 @@ def validate_schema(data, schema):
 
 
 class Blueprint(BaseBlueprint):
+    """
     def route(self, rule, resource_cls=None, **options):
         schema = resource_cls and resource_cls.get_schema()
         def decorator(func):
@@ -24,3 +25,4 @@ class Blueprint(BaseBlueprint):
             return decorated_function
 
         return decorator
+    """

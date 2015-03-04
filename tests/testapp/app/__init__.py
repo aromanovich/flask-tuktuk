@@ -1,23 +1,40 @@
-from flask import Flask, jsonify, request
-from flask.ext.tuktuk import Blueprint
+from flask import Flask, jsonify, request, abort
+from flask.ext.tuktuk import Blueprint, APIManager, register
 
 from . import resources, helpers
 
 
-app = Flask(__name__)
-app.config.update(
-    TUKTUK_HELPERS_MODULE='app.helpers'
-)
 bp = Blueprint('projects', __name__)
 
-
-@bp.route('/projects/<id>/', methods=('GET',), resource_cls=resources.Project)
+@register(resource_cls=resources.Project)
+@bp.route('/projects/<int:id>/', methods=('GET', 'POST'))
 def project(id):
-    data = helpers.Project(request.get_json())
-    data.latest_build.finished_at
+    if request.method == 'POST':
+        data = helpers.Project(request.get_json())
+        print data.latest_build.finished_at
+    else:
+        if id != 1:
+            abort(404)
     return jsonify({
         'id': 1,
     })
 
 
-app.register_blueprint(bp)
+@bp.route('/bad_404/')
+def bad_404():
+    return jsonify({
+        'exception': 'whatever',
+    }), 404
+
+
+api_manager = APIManager()
+
+def create_app(config):
+    app = Flask(__name__)
+    app.config.update(config)
+    app.config.update(
+        TUKTUK_HELPERS_MODULE='app.helpers'
+    )
+    app.register_blueprint(bp)
+    api_manager.init_app(app)
+    return app
