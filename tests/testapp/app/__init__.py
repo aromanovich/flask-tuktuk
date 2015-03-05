@@ -36,6 +36,11 @@ def project(id):
     })
 
 
+@bp.route('/abort_400_custom_detail/')
+def abort_400_custom_detail():
+    abort(400, description='Watch your payloads!')
+
+
 @bp.route('/bad_404/')
 def bad_404():
     return jsonify({
