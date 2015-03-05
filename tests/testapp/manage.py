@@ -3,10 +3,10 @@ from flask.ext.script import Manager
 
 from flask.ext.tuktuk.commands import TukTukCommand
 
-from app import app
+from app import create_app
 
 
-manager = Manager(app)
+manager = Manager(create_app())
 manager.add_command('tuktuk', TukTukCommand)
 
 

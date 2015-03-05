@@ -4,7 +4,7 @@ from flask.ext.tuktuk.helpers import DotExpandedDict, Attribute
 class Project(DotExpandedDict):
     """
     :type latest_build: Build
-    :type id: numbers.Number
+    :type id: int
     :type name: str
     """
     latest_build = Attribute('latest_build')
@@ -12,13 +12,11 @@ class Project(DotExpandedDict):
     name = Attribute('name')
 
 
-class Build(DotExpandedDict):
+class User(DotExpandedDict):
     """
-    :type finished_at: str
-    :type id: numbers.Number
-    :type result: str
+    :type login: str
+    :type id: int
     """
-    finished_at = Attribute('finished_at')
+    login = Attribute('login')
     id = Attribute('id')
-    result = Attribute('result')
 

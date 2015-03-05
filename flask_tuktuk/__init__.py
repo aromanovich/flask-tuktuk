@@ -16,9 +16,6 @@ except ImportError:
     from flask import _request_ctx_stack as ctx_stack
 
 
-from .blueprint import Blueprint, validate_schema
-
-
 __title__ = 'Flask-TukTuk'
 __author__ = 'Anton Romanovich'
 __license__ = 'BSD'
@@ -42,6 +39,10 @@ class Error(jsl.Document):
                                         'occurrence of the problem')
     status = jsl.IntField(description='An HTTP status code.')
     extra = jsl.DictField(description='Additional data describing this occurence of the problem.')
+
+
+def validate_schema(data, schema):
+    jsonschema.validate(data, schema, format_checker=jsonschema.FormatChecker())
 
 
 def preprocess_request():
@@ -112,19 +113,13 @@ def register_error_handlers(app):
             app.register_error_handler(status_code, default_httpexception_handler)
 
 
-def register(resource_cls=None):
-    def decorator(f):
-        f.resource_cls = resource_cls
-        return f
-    return decorator
-
-
 class _APIManagerState(object):
     """Remembers configuration for the app."""
     def __init__(self, api_manager, app):
         self.api_manager = api_manager
         self.app = app
         self.error_resource_cls = None
+        self.resources_registry = {}
 
 
 def get_state(app):
@@ -137,6 +132,7 @@ def get_state(app):
 
 class APIManager(object):
     def __init__(self, app=None):
+        self.after_init_functions = []
         self.app = app
         if app is not None:
             self.init_app(app)
@@ -157,6 +153,8 @@ class APIManager(object):
         app.after_request(postprocess_http_exception)
         register_error_handlers(app)
         self.register_error_resource_cls(Error, app=app)
+        for func in self.after_init_functions:
+            func(app=app)
 
     def get_app(self, reference_app=None):
         """Helper method that implements the logic to look up an application."""
@@ -172,4 +170,22 @@ class APIManager(object):
                            'to current context')
 
     def register_error_resource_cls(self, resource_cls, app=None):
-         get_state(self.get_app(app)).error_resource_cls = resource_cls
+        get_state(self.get_app(app)).error_resource_cls = resource_cls
+
+    def _register(self, helper_name, resource_cls, app=None):
+        get_state(self.get_app(app)).resources_registry[helper_name] = resource_cls
+
+    def register(self, resource, helper=None):
+        helper_name = helper or resource.__name__
+        # FIXME
+        # this is simply ugly :)
+        try:
+            app = self.get_app()
+            self._register(helper_name, resource, app=app)
+        except RuntimeError:
+            self.after_init_functions.append(lambda app: self._register(helper_name, resource, app=app))
+
+        def decorator(f):
+            f.resource_cls = resource
+            return f
+        return decorator

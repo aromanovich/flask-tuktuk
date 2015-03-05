@@ -8,6 +8,7 @@ import jsl
 from flask import current_app
 from flask.ext.script import Manager
 from werkzeug.serving import run_with_reloader
+from flask.ext.tuktuk import get_state
 
 from .helpers import pycharm
 
@@ -25,7 +26,7 @@ def _build_helpers(app):
         if package is None:
             raise Exception('Module "{0}" does not exist. '
                             'Please create it before running the command.'.format(helpers_module))
-        lines = pycharm.generate_module(dict((cls.__name__, cls) for cls in jsl.registry.iter_documents()))
+        lines = pycharm.generate_module(get_state(app).resources_registry)
         with open(package.filename, 'w') as f:
             f.write('\n'.join(lines))
         filename = os.path.relpath(package.filename, os.getcwd())

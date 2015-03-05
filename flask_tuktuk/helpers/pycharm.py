@@ -78,11 +78,12 @@ def _get_class(name, document_cls):
 
 def generate_module(classes):
     """
-    :type classes: list of :class:`jsl.Document`
+    :param classes: a dictionary maping helper names to their JSL-documents
+    :type classes: dict from str to :class:`jsl.Document`
     :rtype: list of strings
     """
     lines = ['from flask.ext.tuktuk.helpers import DotExpandedDict, Attribute', '', '']
-    for cls in classes:
-        lines.extend(_get_class(cls.__name__, cls))
+    for helper_name, document_cls in iteritems(classes):
+        lines.extend(_get_class(helper_name, document_cls))
         lines.extend(['', ''])
     return lines

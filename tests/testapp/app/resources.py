@@ -11,3 +11,11 @@ class Project(jsl.Document):
     id = jsl.IntField(required=True)
     name = jsl.StringField(required=True, min_length=10, max_length=20)
     latest_build = jsl.DocumentField(Build)
+
+
+class User(object):
+    # suppose User is a MongoEngine model
+    # and it has a nested JSL-document
+    class Validator(jsl.Document):
+        id = jsl.IntField(required=True)
+        login = jsl.StringField(required=True)
