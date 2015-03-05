@@ -1,15 +1,15 @@
 # coding: utf-8
 from __future__ import unicode_literals
 
-# Find the stack on which we want to store the database connection.
-# Starting with Flask 0.9, the _app_ctx_stack is the correct one,
-# before that we need to use the _request_ctx_stack.
 import json
 import jsl
 import jsonschema
 from werkzeug.exceptions import HTTPException
 from werkzeug.http import HTTP_STATUS_CODES
 
+# Find the stack on which we want to store the extension state.
+# Starting with Flask 0.9, the _app_ctx_stack is the correct one,
+# before that we need to use the _request_ctx_stack.
 try:
     from flask import _app_ctx_stack as ctx_stack, request, current_app, jsonify, abort
 except ImportError:
@@ -172,20 +172,36 @@ class APIManager(object):
     def register_error_resource_cls(self, resource_cls, app=None):
         get_state(self.get_app(app)).error_resource_cls = resource_cls
 
-    def _register(self, helper_name, resource_cls, app=None):
+    def register(self, helper_name, resource_cls, app=None):
         get_state(self.get_app(app)).resources_registry[helper_name] = resource_cls
 
-    def register(self, resource, helper=None):
+    def helper(self, helper_name):
+        def decorator(resource_cls):
+            try:
+                app = self.get_app()
+                self.register(helper_name, resource_cls, app=app)
+            except RuntimeError:
+                self.after_init_functions.append(lambda app: self.register(helper_name, resource_cls, app=app))
+            return resource_cls
+        return decorator
+
+    def input(self, resource, helper=None):
         helper_name = helper or resource.__name__
         # FIXME
         # this is simply ugly :)
         try:
             app = self.get_app()
-            self._register(helper_name, resource, app=app)
+            self.register(helper_name, resource, app=app)
         except RuntimeError:
-            self.after_init_functions.append(lambda app: self._register(helper_name, resource, app=app))
+            self.after_init_functions.append(lambda app: self.register(helper_name, resource, app=app))
 
         def decorator(f):
             f.resource_cls = resource
+            return f
+        return decorator
+
+    def output(self, spec):
+        # TODO
+        def decorator(f):
             return f
         return decorator
