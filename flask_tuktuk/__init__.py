@@ -10,6 +10,8 @@ from werkzeug.http import HTTP_STATUS_CODES
 # Find the stack on which we want to store the extension state.
 # Starting with Flask 0.9, the _app_ctx_stack is the correct one,
 # before that we need to use the _request_ctx_stack.
+from flask.ext.tuktuk._compat import iteritems
+
 try:
     from flask import _app_ctx_stack as ctx_stack, request, current_app, jsonify, abort
 except ImportError:
@@ -58,18 +60,45 @@ def preprocess_request():
                 validate_schema(data, schema)
 
 
+def get_resource_cls_from_spec(spec, method, status_code):
+    resource_cls = None
+    if isinstance(spec, type) and issubclass(spec, jsl.Document):
+        resource_cls = spec
+    elif isinstance(spec, dict):
+        if method in spec:
+            method_spec = spec[method]
+            if isinstance(method_spec, type) and issubclass(method_spec, jsl.Document):
+                resource_cls = method_spec
+            elif isinstance(method_spec, dict):
+                if status_code in method_spec:
+                    resource_cls = method_spec[status_code]
+                else:
+                    for k, v in iteritems(method_spec):
+                        if isinstance(k, tuple) and len(k) == 2:
+                            if k[0] <= status_code <= k[1]:
+                                resource_cls = v
+                                break
+    return resource_cls
+
+
 def postprocess_http_exception(response):
     """:type response: flask.Response"""
     if not current_app.config['TUKTUK_RAISE_ON_INVALID_RESPONSE']:
         return response
 
     data = json.loads(response.data)
+
+    resource_cls = None
     if response.status_code >= 400:
         resource_cls = get_state(current_app).error_resource_cls
     else:
         view_func = current_app.view_functions[request.endpoint]
-        resource_cls = getattr(view_func, 'resource_cls', None)
-    if resource_cls is not None:
+        if hasattr(view_func, 'spec'):
+            resource_cls = get_resource_cls_from_spec(view_func.spec, request.method, response.status_code)
+
+    if resource_cls is None:
+        pass  # TODO show warning?
+    else:
         schema = resource_cls.get_schema()
         validate(data, schema)
     return response
@@ -156,7 +185,7 @@ class APIManager(object):
         for func in self.after_init_functions:
             func(app=app)
 
-    def get_app(self, reference_app=None):
+    def get_app_or_none(self, reference_app=None):
         """Helper method that implements the logic to look up an application."""
         if reference_app is not None:
             return reference_app
@@ -165,43 +194,56 @@ class APIManager(object):
         ctx = ctx_stack.top
         if ctx is not None:
             return ctx.app
-        raise RuntimeError('application not registered on APIManager '
-                           'instance and no application bound '
-                           'to current context')
+        return None
+
+    def get_app(self, reference_app=None):
+        """Helper method that implements the logic to look up an application."""
+        app = self.get_app_or_none(reference_app=reference_app)
+        if app is None:
+            raise RuntimeError('application not registered on APIManager '
+                               'instance and no application bound '
+                               'to current context')
+        return app
+
 
     def register_error_resource_cls(self, resource_cls, app=None):
-        get_state(self.get_app(app)).error_resource_cls = resource_cls
+        app = self.get_app(app)
+        get_state(app).error_resource_cls = resource_cls
 
-    def register(self, helper_name, resource_cls, app=None):
-        get_state(self.get_app(app)).resources_registry[helper_name] = resource_cls
+    def _register_helper(self, app, helper_name, resource_cls):
+        get_state(app).resources_registry[helper_name] = resource_cls
 
-    def helper(self, helper_name):
+    def register_helper(self, helper_name, resource_cls, app=None):
+        app = self.get_app_or_none(app)
+        if app is not None:
+            self._register_helper(app, helper_name, resource_cls)
+        else:
+            self.after_init_functions.append(lambda app: self._register_helper(app, helper_name, resource_cls))
+        return resource_cls
+
+    def helper(self, name, app=None):
+        """A decorator that registers a :class:`jsl.Document` as a helper.
+
+        :param name: a helper class name
+        :type name: str
+        """
         def decorator(resource_cls):
-            try:
-                app = self.get_app()
-                self.register(helper_name, resource_cls, app=app)
-            except RuntimeError:
-                self.after_init_functions.append(lambda app: self.register(helper_name, resource_cls, app=app))
+            self.register_helper(name, resource_cls, app=app)
             return resource_cls
         return decorator
 
     def input(self, resource, helper=None):
+        app = self.get_app_or_none()
         helper_name = helper or resource.__name__
-        # FIXME
-        # this is simply ugly :)
-        try:
-            app = self.get_app()
-            self.register(helper_name, resource, app=app)
-        except RuntimeError:
-            self.after_init_functions.append(lambda app: self.register(helper_name, resource, app=app))
+        self.register_helper(helper_name, resource, app=app)
 
-        def decorator(f):
-            f.resource_cls = resource
-            return f
+        def decorator(view):
+            view.resource_cls = resource
+            return view
         return decorator
 
     def output(self, spec):
-        # TODO
-        def decorator(f):
-            return f
+        def decorator(view):
+            view.spec = spec
+            return view
         return decorator

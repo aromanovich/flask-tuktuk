@@ -16,8 +16,8 @@ from . import resources, helpers
 @api.output({
     'GET': resources.User.Collection,
     'POST': {
-        '200': resources.User.Resource,
-        '201': resources.IdReference
+        200: resources.User.Resource,
+        201: resources.IdReference
     }
 })
 @bp.route('/users/', methods=('GET', 'POST'))
