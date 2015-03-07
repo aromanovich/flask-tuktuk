@@ -86,8 +86,6 @@ def postprocess_http_exception(response):
     if not current_app.config['TUKTUK_RAISE_ON_INVALID_RESPONSE']:
         return response
 
-    data = json.loads(response.data)
-
     resource_cls = None
     if response.status_code >= 400:
         resource_cls = get_state(current_app).error_resource_cls
@@ -100,6 +98,7 @@ def postprocess_http_exception(response):
         pass  # TODO show warning?
     else:
         schema = resource_cls.get_schema()
+        data = json.loads(response.data)
         validate(data, schema)
     return response
 
@@ -131,6 +130,9 @@ def default_httpexception_handler(e):
     return jsonify({
         'title': HTTP_STATUS_CODES.get(e.code),
         'status': e.code,
+        # TODO
+        # flask-principal sets description to 'flask_principal.Permission'
+        # and it breaks things
         'detail': e.description,
     }), e.code
 
@@ -243,6 +245,8 @@ class APIManager(object):
         return decorator
 
     def output(self, spec):
+        # TODO
+        # warn if a resource specified for 204 response
         def decorator(view):
             view.spec = spec
             return view

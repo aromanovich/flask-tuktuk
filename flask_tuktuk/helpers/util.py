@@ -1,5 +1,6 @@
 # coding: utf-8
 from __future__ import unicode_literals
+from flask.ext.tuktuk import iteritems
 
 
 def make_dot_expanded(data):
@@ -18,7 +19,7 @@ def make_dot_expanded(data):
 class DotExpandedDict(dict):
     def __init__(self, *args, **kwargs):
         super(DotExpandedDict, self).__init__(*args, **kwargs)
-        for key, value in self.items():
+        for key, value in iteritems(self):
             self[key] = make_dot_expanded(value)
 
     def __getattr__(self, attr):

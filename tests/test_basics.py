@@ -40,6 +40,14 @@ def test_hello_world(w):
         },
     }
 
+    r = w.get('/users/')
+    assert r.json == {
+        'items': [],
+        'length': 0,
+        'total': 1000,
+        'offset': 0
+    }
+
 
 def test_abort_400_custom_detail(w):
     r = w.get('/abort_400_custom_detail/', status=400)

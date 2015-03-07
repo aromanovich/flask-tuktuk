@@ -21,7 +21,7 @@ from . import resources, helpers
     }
 })
 @bp.route('/users/', methods=('GET', 'POST'))
-def users(id):
+def users():
     if request.method == 'POST':
         data = helpers.User(**request.get_json())
         # pycharm autocompletes:

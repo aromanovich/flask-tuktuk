@@ -39,8 +39,8 @@ class UserCollection(DotExpandedDict):
     :type offset: int
     """
     # TODO autogenerate constructors
-    def __init__(self, id=None, items=None, total=None, offset=None):
-       super(UserCollection, self).__init__(id=id, items=items, total=total, offset=offset)
+    def __init__(self, length=None, items=None, total=None, offset=None):
+       super(UserCollection, self).__init__(items=items, total=total, offset=offset, length=length)
 
     items = Attribute('items')
     length = Attribute('length')
