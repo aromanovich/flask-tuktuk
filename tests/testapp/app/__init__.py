@@ -68,6 +68,12 @@ def project(id):
     })
 
 
+@api.output(resources.Project)
+@bp.route('/204_annotated_with_resource/', methods=('GET',))
+def view():
+    return '', 204
+
+
 @bp.route('/abort_400_custom_detail/')
 def abort_400_custom_detail():
     abort(400, description='Watch your payloads!')

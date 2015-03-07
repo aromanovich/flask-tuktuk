@@ -58,6 +58,15 @@ def test_abort_400_custom_detail(w):
     }
 
 
+def test_204_annotated_with_resource():
+    app = create_app({
+        'TESTING': True,
+        'TUKTUK_RAISE_ON_INVALID_RESPONSE': True,
+    })
+    w = TestApp(app)
+    w.get('/204_annotated_with_resource/', status=204)
+
+
 def test_raise_on_invalid_response_with_testing():
     app = create_app({
         'TESTING': True,

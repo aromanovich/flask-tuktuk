@@ -97,9 +97,11 @@ def postprocess_http_exception(response):
     if resource_cls is None:
         pass  # TODO show warning?
     else:
-        schema = resource_cls.get_schema()
-        data = json.loads(response.data)
-        validate(data, schema)
+        status_code = response.status_code
+        if status_code != 204:
+            schema = resource_cls.get_schema()
+            data = json.loads(response.data)
+            validate(data, schema)
     return response
 
 
